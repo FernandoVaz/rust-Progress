@@ -4,7 +4,8 @@ const CLEAR: &str = "\x1B[2J\x1B[1:1H";
 
 struct Progress<Iter> {
     iter: Iter,
-    i: usize
+    i: usize,
+    bound: Option<usize>
 }
 
 
@@ -14,9 +15,18 @@ struct Progress<Iter> {
 impl<Iter> Progress<Iter> {
     // This self means wherever it is implemented
     pub fn new(iter: Iter) -> Self {
-        Progress { iter, i: 0 }
+        Progress { iter, i: 0, bound: None }
     }
 }
+
+//Add this method to the Progress data structure only the when the type of Iter is ExactSizeIterator
+impl<Iter> Progress<Iter> 
+where Iter: ExactSizeIterator {
+    pub fn with_bound(mut self) -> Self {
+        self.bound = Some(self.iter.len());
+        self
+    }
+} 
 
 // This block implements a trait for a type.
 // The compiler understands that the Progress data type is an Iterator and have a for loop,
@@ -26,7 +36,11 @@ where Iter: Iterator {
     type Item = Iter::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        println!("{}{}", CLEAR, "#".repeat(self.i));
+        println!("{}", CLEAR);
+        match self.bound {
+            Some(bound) => println!("[{}{}]", "#".repeat(self.i), " ".repeat(bound-self.i)),
+            None => println!("{}", "#".repeat(self.i))
+        };
         self.i += 1;
         self.iter.next()
     }
@@ -49,7 +63,9 @@ trait ProgressIteratorExt: Sized{
 }
 
 // For all types Iter, implements the trait for the quantified Item.
-impl<Iter> ProgressIteratorExt for Iter {
+// Cool thing number one
+impl<Iter> ProgressIteratorExt for Iter
+where Iter: Iterator {
     fn progress(self) -> Progress<Self> {
         Progress::new(self)
     }
@@ -61,8 +77,10 @@ fn expensive_calculation(_n: &i32) {
 }
 
 fn main() {
-    let x = 1.progress();
-    let y = "blah".progress();
+    for n in (0 .. ).progress() {
+        expensive_calculation(&n);
+    }
+
     let v = vec![1, 2, 3];
     for n in Progress::new(v.iter().progress()) {
         expensive_calculation(n);
