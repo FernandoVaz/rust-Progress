@@ -5,7 +5,8 @@ const CLEAR: &str = "\x1B[2J\x1B[1:1H";
 struct Progress<Iter> {
     iter: Iter,
     i: usize,
-    bound: Option<usize>
+    bound: Option<usize>,
+    delims: (char, char)
 }
 
 
@@ -15,7 +16,7 @@ struct Progress<Iter> {
 impl<Iter> Progress<Iter> {
     // This self means wherever it is implemented
     pub fn new(iter: Iter) -> Self {
-        Progress { iter, i: 0, bound: None }
+        Progress { iter, i: 0, bound: None, delims: ('[', ']') }
     }
 }
 
@@ -28,6 +29,13 @@ where Iter: ExactSizeIterator {
     }
 } 
 
+impl<Iter> Progress<Iter> {
+    pub fn with_delims(mut self, delims: (char, char)) -> Self {
+        self.delims = delims;
+        self
+    }
+}
+
 // This block implements a trait for a type.
 // The compiler understands that the Progress data type is an Iterator and have a for loop,
 // satisfying the traits requirements
@@ -38,7 +46,12 @@ where Iter: Iterator {
     fn next(&mut self) -> Option<Self::Item> {
         println!("{}", CLEAR);
         match self.bound {
-            Some(bound) => println!("[{}{}]", "#".repeat(self.i), " ".repeat(bound-self.i)),
+            Some(bound) => println!(
+                "{}{}{}{}",
+                 self.delims.0,
+                 "#".repeat(self.i),
+                 " ".repeat(bound-self.i),
+                 self.delims.1),
             None => println!("{}", "#".repeat(self.i))
         };
         self.i += 1;
@@ -46,17 +59,6 @@ where Iter: Iterator {
     }
 }
 
-
-//The where clause is located as an heritance from the function?
-fn progress<Iter>(iter: Iter, f: fn(Iter::Item) -> ()) 
-where Iter: Iterator {
-    let mut i = 1;
-    for n in iter {
-        println!("{}{}", CLEAR, "#".repeat(i));
-        i += 1;
-        f(n);
-    }
-}
 
 trait ProgressIteratorExt: Sized{
     fn progress(self) -> Progress<Self>;
@@ -71,18 +73,18 @@ where Iter: Iterator {
     }
 }
 
-
 fn expensive_calculation(_n: &i32) {
     sleep(Duration::from_secs(1));
 }
 
 fn main() {
-    for n in (0 .. ).progress() {
-        expensive_calculation(&n);
-    }
+    let brkts = ('<', '>');
+    //for n in (0 .. ).progress() {
+    //    expensive_calculation(&n);
+   //}
 
     let v = vec![1, 2, 3];
-    for n in Progress::new(v.iter().progress()) {
+    for n in Progress::new(v.iter().progress().with_bound().with_delims(brkts)) {
         expensive_calculation(n);
     }
 }
