@@ -28,7 +28,7 @@ where Iter: Iterator {
     fn next(&mut self) -> Option<Self::Item> {
         println!("{}{}", CLEAR, "#".repeat(self.i));
         self.i += 1;
-        self.iter.net()
+        self.iter.next()
     }
 }
 
