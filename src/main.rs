@@ -44,13 +44,27 @@ where Iter: Iterator {
     }
 }
 
+trait ProgressIteratorExt: Sized{
+    fn progress(self) -> Progress<Self>;
+}
+
+// For all types Iter, implements the trait for the quantified Item.
+impl<Iter> ProgressIteratorExt for Iter {
+    fn progress(self) -> Progress<Self> {
+        Progress::new(self)
+    }
+}
+
+
 fn expensive_calculation(_n: &i32) {
     sleep(Duration::from_secs(1));
 }
 
 fn main() {
+    let x = 1.progress();
+    let y = "blah".progress();
     let v = vec![1, 2, 3];
-    for n in Progress::new(v.iter()) {
+    for n in Progress::new(v.iter().progress()) {
         expensive_calculation(n);
     }
 }
